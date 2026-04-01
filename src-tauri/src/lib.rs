@@ -178,20 +178,22 @@ pub fn run() {
             let menu = build_menu(app.handle())?;
             app.set_menu(menu)?;
 
-            // Inject memory pressure monitoring script into the webview
+            // Enable devtools in all builds for debugging
             if let Some(window) = app.get_webview_window("main") {
+                // Allow Cmd+Alt+I to open devtools in production too
+                window.open_devtools();
+
+                // Inject memory diagnostic
                 let _ = window.eval(r#"
                     (function() {
-                        var MEMORY_CHECK_INTERVAL = 60000;
-                        var MEMORY_WARN_THRESHOLD = 400 * 1024 * 1024;
+                        var count = 0;
                         setInterval(function() {
-                            if (performance && performance.memory) {
-                                var used = performance.memory.usedJSHeapSize;
-                                if (used > MEMORY_WARN_THRESHOLD) {
-                                    console.warn('[SideX] High memory usage: ' + Math.round(used / 1024 / 1024) + 'MB');
-                                }
+                            count++;
+                            var entries = performance.getEntriesByType('resource');
+                            if (count <= 5) {
+                                console.log('[SideX Memory] Resource entries: ' + entries.length);
                             }
-                        }, MEMORY_CHECK_INTERVAL);
+                        }, 10000);
                     })();
                 "#);
             }
