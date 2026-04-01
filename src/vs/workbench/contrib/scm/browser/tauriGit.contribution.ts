@@ -428,6 +428,51 @@ class TauriGitContribution extends Disposable implements IWorkbenchContribution 
 		this._register(CommandsRegistry.registerCommand('tauri-git.refresh', async () => {
 			await provider.refresh();
 		}));
+
+		this._register(CommandsRegistry.registerCommand('tauri-git.discardAll', async () => {
+			try {
+				const invoke = await getTauriInvoke();
+				if (invoke) {
+					await invoke('git_checkout', { path: rootPath, branch: '.' });
+				}
+				await provider.refresh();
+			} catch (err) {
+				this.logService.error('[TauriGit] discard all failed', err);
+			}
+		}));
+
+		this._register(CommandsRegistry.registerCommand('tauri-git.openAllChanges', async () => {
+			// No-op for now — would open all changed files
+		}));
+
+		this._register(CommandsRegistry.registerCommand('tauri-git.stageFile', async (_accessor, resource) => {
+			try {
+				if (resource?.sourceUri) {
+					await invokeGit('git_add', { path: rootPath, files: [resource.sourceUri.fsPath] });
+					await provider.refresh();
+				}
+			} catch (err) {
+				this.logService.error('[TauriGit] stage file failed', err);
+			}
+		}));
+
+		this._register(CommandsRegistry.registerCommand('tauri-git.discardFile', async (_accessor, resource) => {
+			try {
+				if (resource?.sourceUri) {
+					const invoke = await getTauriInvoke();
+					if (invoke) {
+						await invoke('git_checkout', { path: rootPath, branch: resource.sourceUri.fsPath });
+					}
+					await provider.refresh();
+				}
+			} catch (err) {
+				this.logService.error('[TauriGit] discard file failed', err);
+			}
+		}));
+
+		this._register(CommandsRegistry.registerCommand('tauri-git.openFile', async (_accessor, resource) => {
+			// No-op for now — would open the file in editor
+		}));
 	}
 }
 
@@ -604,7 +649,7 @@ MenuRegistry.appendMenuItem(MenuId.SCMSourceControlInline, {
 	order: 2,
 });
 
-// Register SCM title toolbar actions (the 4 buttons next to "CHANGES")
+// Register SCM title toolbar actions (the buttons next to "CHANGES" header)
 MenuRegistry.appendMenuItem(MenuId.SCMTitle, {
 	command: { id: 'tauri-git.commit', title: 'Commit', icon: ThemeIcon.fromId('check') },
 	group: 'navigation',
@@ -612,13 +657,45 @@ MenuRegistry.appendMenuItem(MenuId.SCMTitle, {
 });
 
 MenuRegistry.appendMenuItem(MenuId.SCMTitle, {
-	command: { id: 'tauri-git.stageAll', title: 'Stage All Changes', icon: ThemeIcon.fromId('add') },
+	command: { id: 'tauri-git.refresh', title: 'Refresh', icon: ThemeIcon.fromId('refresh') },
 	group: 'navigation',
 	order: 2,
 });
 
-MenuRegistry.appendMenuItem(MenuId.SCMTitle, {
-	command: { id: 'tauri-git.refresh', title: 'Refresh', icon: ThemeIcon.fromId('refresh') },
-	group: 'navigation',
+// Register buttons on the "Changes" group header (stage all, discard all, open)
+MenuRegistry.appendMenuItem(MenuId.SCMResourceGroupContext, {
+	command: { id: 'tauri-git.stageAll', title: 'Stage All Changes', icon: ThemeIcon.fromId('add') },
+	group: 'inline',
 	order: 3,
+});
+
+MenuRegistry.appendMenuItem(MenuId.SCMResourceGroupContext, {
+	command: { id: 'tauri-git.discardAll', title: 'Discard All Changes', icon: ThemeIcon.fromId('discard') },
+	group: 'inline',
+	order: 2,
+});
+
+MenuRegistry.appendMenuItem(MenuId.SCMResourceGroupContext, {
+	command: { id: 'tauri-git.openAllChanges', title: 'Open All Changes', icon: ThemeIcon.fromId('go-to-file') },
+	group: 'inline',
+	order: 1,
+});
+
+// Register buttons on individual changed files (stage, discard, open)
+MenuRegistry.appendMenuItem(MenuId.SCMResourceContext, {
+	command: { id: 'tauri-git.stageFile', title: 'Stage Changes', icon: ThemeIcon.fromId('add') },
+	group: 'inline',
+	order: 3,
+});
+
+MenuRegistry.appendMenuItem(MenuId.SCMResourceContext, {
+	command: { id: 'tauri-git.discardFile', title: 'Discard Changes', icon: ThemeIcon.fromId('discard') },
+	group: 'inline',
+	order: 2,
+});
+
+MenuRegistry.appendMenuItem(MenuId.SCMResourceContext, {
+	command: { id: 'tauri-git.openFile', title: 'Open File', icon: ThemeIcon.fromId('go-to-file') },
+	group: 'inline',
+	order: 1,
 });
