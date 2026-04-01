@@ -5,7 +5,6 @@
 
 async function boot() {
 	// Import the web workbench barrel in stages so partial failures are isolated.
-	// Each stage catches independently — a failure in one won't block the others.
 	const stages = [
 		['common',       () => import('./vs/workbench/workbench.common.main.js')],
 		['web.main',     () => import('./vs/workbench/browser/web.main.js')],
@@ -27,7 +26,11 @@ async function boot() {
 		await new Promise<void>(r => window.addEventListener('DOMContentLoaded', () => r()));
 	}
 
-	create(document.body, {
+	// Check if a folder was passed via URL params (from Tauri folder open)
+	const urlParams = new URLSearchParams(window.location.search);
+	const folderParam = urlParams.get('folder');
+
+	const options: any = {
 		windowIndicator: {
 			label: 'SideX',
 			tooltip: 'SideX — Tauri Code Editor',
@@ -39,7 +42,7 @@ async function boot() {
 			applicationName: 'sidex',
 			dataFolderName: '.sidex',
 			version: '0.1.0',
-		} as any,
+		},
 		settingsSyncOptions: {
 			enabled: false,
 		},
@@ -47,9 +50,17 @@ async function boot() {
 		defaultLayout: {
 			editors: [],
 		},
-	});
+	};
 
-	console.log('[SideX] Workbench created successfully');
+	if (folderParam) {
+		// Open with a folder workspace
+		const { URI } = await import('./vs/base/common/uri.js');
+		options.folderUri = URI.parse(folderParam);
+	}
+
+	create(document.body, options);
+
+	console.log('[SideX] Workbench created successfully' + (folderParam ? ` (folder: ${folderParam})` : ''));
 }
 
 boot().catch((err) => {
