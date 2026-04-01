@@ -20,6 +20,7 @@ async function boot() {
 	}
 
 	const { create } = await import('./vs/workbench/browser/web.factory.js');
+	const { URI } = await import('./vs/base/common/uri.js');
 
 	if (document.readyState === 'loading') {
 		await new Promise<void>(r => window.addEventListener('DOMContentLoaded', () => r()));
@@ -28,7 +29,27 @@ async function boot() {
 	const urlParams = new URLSearchParams(window.location.search);
 	const folderParam = urlParams.get('folder');
 
+	// Build the workspace provider — this is how VSCode web knows what folder to open
+	let workspace: any = undefined;
+	if (folderParam) {
+		workspace = { folderUri: URI.parse(folderParam) };
+	}
+
 	const options: any = {
+		// The workspace provider tells VSCode what folder/workspace to open
+		workspaceProvider: {
+			workspace,
+			trusted: true,
+			open: async (_workspace: any, _options: any) => {
+				// When VSCode asks to open a new workspace, reload with the folder param
+				if (_workspace && 'folderUri' in _workspace) {
+					const url = new URL(window.location.href);
+					url.searchParams.set('folder', _workspace.folderUri.toString());
+					window.location.href = url.toString();
+				}
+				return true;
+			},
+		},
 		windowIndicator: {
 			label: folderParam ? decodeURIComponent(folderParam.split('/').pop() || 'SideX') : 'SideX',
 			tooltip: 'SideX — Tauri Code Editor',
@@ -45,13 +66,10 @@ async function boot() {
 			enabled: false,
 		},
 		additionalBuiltinExtensions: [],
-		// Don't open Getting Started or any default editors
-		welcomeBanner: undefined,
 		defaultLayout: {
 			editors: [],
 			layout: { editors: {} },
 		},
-		// Disable features that call home to Microsoft
 		configurationDefaults: {
 			'workbench.startupEditor': 'none',
 			'workbench.enableExperiments': false,
@@ -63,14 +81,9 @@ async function boot() {
 		},
 	};
 
-	if (folderParam) {
-		const { URI } = await import('./vs/base/common/uri.js');
-		options.folderUri = URI.parse(folderParam);
-	}
-
 	create(document.body, options);
 
-	console.log('[SideX] Workbench created' + (folderParam ? ` (folder: ${folderParam})` : ''));
+	console.log('[SideX] Workbench created' + (folderParam ? ` (folder: ${folderParam})` : ' (no folder)'), 'workspace:', workspace);
 }
 
 boot().catch((err) => {
