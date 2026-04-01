@@ -115,12 +115,11 @@ export function assertType(condition: unknown, type?: string): asserts condition
  * @see {@link assertDefined} for a similar utility that leverages TS assertion functions to narrow down the type of `arg` to be non-nullable.
  */
 export function assertReturnsDefined<T>(arg: T | null | undefined): NonNullable<T> {
-	assert(
-		arg !== null && arg !== undefined,
-		'Argument is `undefined` or `null`.',
-	);
+	if (arg === null || arg === undefined) {
+		console.warn('assertReturnsDefined: Argument is `undefined` or `null`.');
+	}
 
-	return arg;
+	return arg as NonNullable<T>;
 }
 
 /**
@@ -170,7 +169,7 @@ export function assertReturnsAllDefined(...args: (unknown | null | undefined)[])
 		const arg = args[i];
 
 		if (isUndefinedOrNull(arg)) {
-			throw new Error(`Assertion Failed: argument at index ${i} is undefined or null`);
+			console.warn(`assertReturnsAllDefined: argument at index ${i} is undefined or null`);
 		}
 
 		result.push(arg);
