@@ -312,27 +312,38 @@ class TauriGitContribution extends Disposable implements IWorkbenchContribution 
 	}
 
 	private async _init(): Promise<void> {
+		console.log('[TauriGit] _init started');
 		const folders = this.workspaceContextService.getWorkspace().folders;
+		console.log('[TauriGit] Workspace folders:', folders.length, folders.map(f => f.uri.toString()));
+
+		// Store folders globally for git.init command
+		(window as any).__sidex_workspaceFolders = folders.map(f => f.uri.fsPath);
+
 		if (folders.length === 0) {
+			console.log('[TauriGit] No workspace folders, skipping');
 			return;
 		}
 
 		const rootUri = folders[0].uri;
 		const rootPath = rootUri.fsPath;
+		console.log('[TauriGit] Checking if git repo:', rootPath);
 
 		let isRepo: boolean | undefined;
 		try {
 			isRepo = await invokeGit<boolean>('git_is_repo', { path: rootPath });
+			console.log('[TauriGit] git_is_repo result:', isRepo);
 		} catch (err) {
+			console.error('[TauriGit] git_is_repo failed:', err);
 			this.logService.info('[TauriGit] git_is_repo unavailable — Tauri backend not present', err);
 			return;
 		}
 
 		if (!isRepo) {
+			console.log('[TauriGit] Not a git repo, skipping');
 			return;
 		}
 
-		this.logService.info('[TauriGit] Git repository detected, registering SCM provider');
+		console.log('[TauriGit] Git repository detected, registering SCM provider');
 
 		const provider = new TauriGitSCMProvider(
 			rootUri,
@@ -378,6 +389,38 @@ class TauriGitContribution extends Disposable implements IWorkbenchContribution 
 		}));
 	}
 }
+
+// Register git.init command globally so the "Initialize Repository" button works
+CommandsRegistry.registerCommand('git.init', async () => {
+	try {
+		const invoke = await getTauriInvoke();
+		if (!invoke) { return; }
+
+		const { open } = await import('@tauri-apps/plugin-dialog');
+		// Use the current workspace folder if available, otherwise ask
+		const folders = (window as any).__sidex_workspaceFolders;
+		let targetPath: string | undefined;
+
+		if (folders && folders.length > 0) {
+			targetPath = folders[0];
+		} else {
+			const selected = await open({ directory: true, title: 'Initialize Git Repository' });
+			if (selected && typeof selected === 'string') {
+				targetPath = selected;
+			}
+		}
+
+		if (!targetPath) { return; }
+
+		await invoke('git_init', { path: targetPath });
+		console.log('[TauriGit] Repository initialized at', targetPath);
+
+		// Reload to pick up the new git repo
+		window.location.reload();
+	} catch (err) {
+		console.error('[TauriGit] git init failed:', err);
+	}
+});
 
 registerWorkbenchContribution2(
 	TauriGitContribution.ID,
