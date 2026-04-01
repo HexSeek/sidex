@@ -562,43 +562,43 @@ CommandsRegistry.registerCommand('tauri-git.sync', async () => {
 
 // ─── SCM Source Control ("...") menu items ──────────────────────────────────
 
-MenuRegistry.appendMenuItem(MenuId.SCMSourceControl, {
+MenuRegistry.appendMenuItem(MenuId.SCMSourceControlInline, {
 	command: { id: 'tauri-git.pull', title: 'Pull' },
 	group: '1_sync',
 	order: 1,
 });
 
-MenuRegistry.appendMenuItem(MenuId.SCMSourceControl, {
+MenuRegistry.appendMenuItem(MenuId.SCMSourceControlInline, {
 	command: { id: 'tauri-git.push', title: 'Push' },
 	group: '1_sync',
 	order: 2,
 });
 
-MenuRegistry.appendMenuItem(MenuId.SCMSourceControl, {
+MenuRegistry.appendMenuItem(MenuId.SCMSourceControlInline, {
 	command: { id: 'tauri-git.fetch', title: 'Fetch' },
 	group: '1_sync',
 	order: 3,
 });
 
-MenuRegistry.appendMenuItem(MenuId.SCMSourceControl, {
+MenuRegistry.appendMenuItem(MenuId.SCMSourceControlInline, {
 	command: { id: 'tauri-git.sync', title: 'Synchronize Changes', icon: ThemeIcon.fromId('sync') },
 	group: '1_sync',
 	order: 4,
 });
 
-MenuRegistry.appendMenuItem(MenuId.SCMSourceControl, {
+MenuRegistry.appendMenuItem(MenuId.SCMSourceControlInline, {
 	command: { id: 'tauri-git.clone', title: 'Clone...' },
 	group: '1_sync',
 	order: 5,
 });
 
-MenuRegistry.appendMenuItem(MenuId.SCMSourceControl, {
+MenuRegistry.appendMenuItem(MenuId.SCMSourceControlInline, {
 	command: { id: 'tauri-git.checkoutTo', title: 'Checkout to...' },
 	group: '4_branch',
 	order: 1,
 });
 
-MenuRegistry.appendMenuItem(MenuId.SCMSourceControl, {
+MenuRegistry.appendMenuItem(MenuId.SCMSourceControlInline, {
 	command: { id: 'tauri-git.createBranch', title: 'Create Branch...' },
 	group: '4_branch',
 	order: 2,
