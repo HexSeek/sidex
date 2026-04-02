@@ -31,7 +31,6 @@ export default defineConfig({
       },
     },
     esbuild: {
-      // Disable aggressive minification to prevent runtime errors
       minifyIdentifiers: false,
       minifySyntax: false,
       minifyWhitespace: false,
